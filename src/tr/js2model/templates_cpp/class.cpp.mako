@@ -117,28 +117,30 @@ string to_string(const ${class_name} &val, std::string indent/* = "" */, std::st
     ostringstream os;
 
     os << indent << "{" << endl;
-    % for v in classDef.variable_defs:
+    % for v in classDef.variable_defs[:-1]:
 <%
     inst_name = base.attr.inst_name(v.name)
 %>\
     %if v.isArray:
     os << indent << pretty_print << "\"${v.name}\": [";
-    for( auto &array_item : val.${inst_name} ) {
+    for( int i = 0; i < val.${inst_name}.size(); i++) {
 
         % if v.schema_type == 'string':
-        os << "\"" << array_item << "\",";
+        os << "\"" << val.${inst_name}[i] << "\"";
         %elif v.schema_type == 'integer':
-        os << array_item << ",";
+        os << val.${inst_name}[i];
         %elif v.schema_type == 'boolean':
-        os << (array_item ? "true" : "false") << ",";
+        os << (val.${inst_name}[i] ? "true" : "false");
         %elif v.schema_type == 'object':
-        os << endl << to_string(array_item, indent + pretty_print + pretty_print, pretty_print) << "," << endl;
+        os << endl << to_string(val.${inst_name}[i], indent + pretty_print + pretty_print, pretty_print) << endl;
 ##        %elif v.schema_type == 'array':
 ##        ## TODO: probably need to recursively handle arrays of arrays
 ##        assert(array_item->IsArray());
 ##        vector<${v.type}> item_array;
 ##        ${inst_name}.push_back(${v.type}(item_array));
         %endif
+        if(i != val.${inst_name}.size() - 1)
+            os << ",";
     }
     os << indent << pretty_print << "]," << endl;
     %else:
@@ -153,6 +155,48 @@ string to_string(const ${class_name} &val, std::string indent/* = "" */, std::st
     %endif
     %endif
     % endfor
+############################## Added for last case ################################
+    %if len(classDef.variable_defs) > 0:
+<%
+    inst_name = base.attr.inst_name(classDef.variable_defs[-1].name)
+    g = classDef.variable_defs[-1]
+%>\
+    %if g.isArray:
+    os << indent << pretty_print << "\"${g.name}\": [";
+    for( int i = 0; i < val.${inst_name}.size(); i++) {
+    ##for( auto &array_item : val.${inst_name} ) {
+
+        % if g.schema_type == 'string':
+        os << "\"" << val.${inst_name}[i] << "\"";
+        %elif g.schema_type == 'integer':
+        os << val.${inst_name}[i];
+        %elif g.schema_type == 'boolean':
+        os << (val.${inst_name}[i] ? "true" : "false");
+        %elif g.schema_type == 'object':
+        os << endl << to_string(val.${inst_name}[i], indent + pretty_print + pretty_print, pretty_print) << endl;
+##        %elif v.schema_type == 'array':
+##        ## TODO: probably need to recursively handle arrays of arrays
+##        assert(array_item->IsArray());
+##        vector<${v.type}> item_array;
+##        ${inst_name}.push_back(${v.type}(item_array));
+        %endif
+        if(i != val.${inst_name}.size() - 1)
+            os << ",";
+    }
+    os << indent << pretty_print << "]" << endl;
+    %else:
+    % if g.schema_type == 'string':
+    os << indent << pretty_print << "\"${g.name}\": \"" << val.${inst_name} << "\"" << endl;
+    %elif g.schema_type == 'integer':
+    os << indent << pretty_print << "\"${g.name}\": " << val.${inst_name} << endl;
+    %elif g.schema_type == 'boolean':
+    os << indent << pretty_print << "\"${g.name}\": " << (val.${inst_name} ? "true" : "false") << endl;
+    %elif g.schema_type == 'object':
+    os << indent << pretty_print << "\"${g.name}\": " << to_string(val.${inst_name}, indent + pretty_print, pretty_print) << endl;
+    %endif 
+    %endif
+    %endif
+################################# Added for last case ##########################################
     os << indent << "}";
 
     return os.str();

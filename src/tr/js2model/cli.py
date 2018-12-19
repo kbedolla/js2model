@@ -21,7 +21,7 @@
 # THE SOFTWARE.
 
 from __future__ import print_function
-from tr.js2model.jsonschema2model import JsonSchema2Model
+from jsonschema2model import JsonSchema2Model
 import click
 import logging
 

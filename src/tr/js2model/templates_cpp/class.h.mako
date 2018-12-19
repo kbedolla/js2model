@@ -30,7 +30,7 @@ THE SOFTWARE.
 #include "${dep}"
 % endfor
 % endif
-#include "document.h"
+#include "rapidjson/document.h"
 % if import_files:
 % for import_file in import_files:
 #import <${import_file}>

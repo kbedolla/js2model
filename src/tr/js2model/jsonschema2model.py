@@ -90,6 +90,7 @@ class JsonSchemaKeywords(object):
     ITEMS = 'items'
     TITLE = 'title'
     DESCRIPTION = 'description'
+    ONEOF = 'oneOf'
     REQUIRED = 'required'
     UNIQUEITEMS = 'uniqueItems'
     MAXITEMS = 'maxItems'
@@ -105,6 +106,7 @@ class JsonSchemaKeywords(object):
     TYPENAME = 'typeName'
     ID = 'id'
     PROPERTIES = 'properties'
+    DISCRIMINATOR = 'discriminator'
     EXTENDS = 'extends'
     ADDITIONAL_PROPERTIES = 'additionalProperties'
 
@@ -201,6 +203,7 @@ class VariableDef(object):
         self.maxLength = None
         self.minLength = None
         self.title = None
+        self.oneOf = None
         self.description = None
         self.format = None
 
@@ -266,8 +269,8 @@ class TemplateManager(object):
         }
 
         self.lang_conventions = {
-            'objc': LanguageConventions(),
-            'cpp': LanguageConventions(cap_class_name=False, use_prefix=False, type_suffix='_t'),
+            'objc': LanguageConventions(),##cap_class_name=True has a bug, only changes header file.
+            'cpp': LanguageConventions(cap_class_name=False, use_prefix=False, type_suffix=''),
             'py': LanguageConventions(use_prefix=False, ivar_name_convention=LanguageConventions.NAME_SNAKE_CASE),
         }
 
@@ -301,7 +304,7 @@ class JsonSchema2Model(object):
     SCHEMA_URI = '__uri__'
 
     def __init__(self, outdir, import_files=None, super_classes=None, interfaces=None,
-                 include_additional_properties=True,
+                 include_additional_properties=False,
                  lang='objc', prefix='TR', namespace='tr', root_name=None, validate=True, verbose=False,
                  skip_deserialization=False, include_dependencies=True, template_manager=TemplateManager()):
 
@@ -524,6 +527,17 @@ class JsonSchema2Model(object):
 
             self.models[class_def.name] = class_def
 
+            if JsonSchemaKeywords.ONEOF in schema_object:
+                oneOf = schema_object[JsonSchemaKeywords.ONEOF]
+                discriminator = schema_object[JsonSchemaKeywords.DISCRIMINATOR]
+
+                typeObject = oneOf[0]['properties'][discriminator]
+                scope.append(discriminator)
+                prop_var_def = self.create_model(typeObject, scope)
+                class_def.variable_defs.append(prop_var_def)
+
+                scope.pop()
+
             if JsonSchemaKeywords.PROPERTIES in schema_object:
 
                 properties = schema_object[JsonSchemaKeywords.PROPERTIES]
@@ -621,6 +635,12 @@ class JsonSchema2Model(object):
 
         if JsonSchemaKeywords.FORMAT in schema_object:
             var_def.format = schema_object[JsonSchemaKeywords.FORMAT]
+        
+        if JsonSchemaKeywords.DISCRIMINATOR in schema_object:
+            var_def.discriminator = schema_object[JsonSchemaKeywords.DISCRIMINATOR]
+
+        if JsonSchemaKeywords.ONEOF in schema_object:
+            var_def.oneOf = schema_object[JsonSchemaKeywords.ONEOF]
 
         if JsonSchemaKeywords.TYPE in schema_object:
 
